@@ -1,0 +1,56 @@
+---
+- name: Install container runtime containerd, kubeadm, kubelet, kubectl
+  hosts: localhost
+  gather_facts: False
+  tasks:
+  - name: Get some stdout
+    shell:
+      cmd: "cat /home/yelena/netology_devops_diploma/some_file"
+    register: stdout_var
+  - name: Check var
+    debug:
+      var: stdout_var
+      verbosity: 0
+  - name: Extract command
+    set_fact:
+      #cmd_to_run: "{{ stdout_var.stdout_lines | regex_search('kubeadm join[^.]', multiline=True) }}"
+      kube_join: "['kubeadm join 192.168.20.20:6443 --token 3gc7tl.q27imc21cfnjks5k \\\\']['\\t--discovery-token-ca-cert-hash sha256:2557cbac7e0d61a90eaea38056867ad20fa797980477999de772735fdc9533d9 ']"
+
+  - name: Register dummy host with kube_join variable
+    add_host:
+      name: "KUBE_JOIN_DUMMY_HOST"
+      KUBE_JOIN_CMD: "{{ kube_join }}"
+
+- name: Check var
+  hosts: localhost
+  gather_facts: False
+  tasks:
+#  - name: Check var
+#    debug:
+#      var: cmd_to_run1
+#      verbosity: 0
+#  - name: Check var
+#    debug:
+#      var: cmd_to_run2
+#      verbosity: 0
+  - name: Assign the value to kube_join var
+    set_fact:
+      kube_join: "{{ hostvars['KUBE_JOIN_DUMMY_HOST']['KUBE_JOIN_CMD'] | replace('\\t', '') | replace('[', '') | replace(']', '') | replace('\\\\', '') }}"
+  - name: Check var
+    debug:
+      var: "{{ kube_join }}"
+      verbosity: 0
+#  - name: Check filtered var
+#    debug:
+#    # \\\\ = \ removed
+#
+#      var: "{{ kube_join | replace('\\t', '') | replace('[', '') | replace(']', '') | replace('\\\\', '') }}"
+#      verbosity: 0
+
+  - name: Echo command in shell
+    shell:
+      cmd: "{{ kube_join }}"
+    register: echo_output
+  - name: Result of echo
+    debug:
+      var: echo_output.stdout

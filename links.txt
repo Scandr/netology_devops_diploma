@@ -1,0 +1,3 @@
+# Create S3 backend for terraform
+https://cloud.yandex.com/en-ru/docs/tutorials/infrastructure-management/terraform-state-storage
+
