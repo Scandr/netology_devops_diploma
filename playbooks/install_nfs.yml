@@ -1,0 +1,167 @@
+---
+- name: Create NFS server for PV
+  gather_facts: True
+  become: true
+  hosts: kube_control_plane
+  tasks:
+  - name: Remove apt lock file
+    file:
+      state: absent
+      path:
+        - "/var/lib/dpkg/lock-frontend"
+        - "/var/lib/dpkg/lock"
+        - "/var/lib/apt/lists/lock"
+        - "/var/cache/apt/archives/lock"
+
+#  - name: Pause for 5 minutes to build app cache
+#    ansible.builtin.pause:
+#      seconds: 10
+  - name: Install NFS package
+    ansible.builtin.apt:
+      update_cache: yes
+      pkg:
+      - nfs-kernel-server
+
+  - name: Create NFS storage dir
+    ansible.builtin.file:
+      path: /srv/nfs
+      state: directory
+      mode: '0777'
+      owner: nobody
+      group: nogroup
+
+  - name: Make EXT4 filesystem on nfs disk
+    ansible.builtin.shell:
+      cmd: "mkfs.ext4 /dev/disk/by-id/virtio-nfs"
+
+  - name: Mount nfs disk
+    ansible.builtin.shell:
+      cmd: "mount /dev/disk/by-id/virtio-nfs /srv/nfs"
+
+  - name: Add a line to a file if the file does not exist, without passing regexp
+    ansible.builtin.lineinfile:
+      path: /etc/fstab
+      line: "/dev/disk/by-id/virtio-nfs /srv/nfs    ext4    defaults        0       0"
+      create: yes
+
+  - name: Recursively change ownership of a directory
+    ansible.builtin.file:
+      path: /srv/nfs
+      state: directory
+      recurse: yes
+      owner: nobody
+      group: nogroup
+
+  - name: Create NFS config
+    ansible.builtin.copy:
+      dest: "/etc/exports"
+      content: |
+        /srv/nfs     192.168.20.0/24(rw,sync,no_subtree_check)
+
+  - name: Load NFS config
+    ansible.builtin.shell:
+      cmd: "exportfs -a && systemctl restart nfs-kernel-server"
+
+  - name: Register dummy host with NFS_SERVER variable
+    add_host:
+      name: "NFS_SERVER_DUMMY_HOST"
+      NFS_SERVER: "{{ ansible_eth0.ipv4.address }}"
+
+- name: Create NFS clients for PV
+  gather_facts: True
+  become: true
+  hosts: k8s_cluster
+  tasks:
+
+  - name: Remove apt lock file
+    file:
+      state: absent
+      path:
+        - "/var/lib/dpkg/lock-frontend"
+        - "/var/lib/dpkg/lock"
+        - "/var/lib/apt/lists/lock"
+        - "/var/cache/apt/archives/lock"
+#  - name: Pause for 5 minutes to build app cache
+#    ansible.builtin.pause:
+#      seconds: 10
+  - name: Install NFS package
+    ansible.builtin.apt:
+      update_cache: yes
+      pkg:
+      - nfs-common
+
+  - name: Create NFS mount dir
+    ansible.builtin.file:
+      path: /opt/nfs-storage
+      state: directory
+      mode: '0777'
+      owner: nobody
+      group: nogroup
+
+  - name: Add a line to a file if the file does not exist, without passing regexp
+    ansible.builtin.lineinfile:
+      path: /etc/fstab
+      line: "{{ hostvars['NFS_SERVER_DUMMY_HOST']['NFS_SERVER'] }}:/srv/nfs  /opt/nfs-storage  nfs defaults 0 0"
+      create: yes
+
+  - name: Mount nfs server
+    ansible.builtin.shell:
+      cmd: "mount -t nfs {{ hostvars['NFS_SERVER_DUMMY_HOST']['NFS_SERVER'] }}:/srv/nfs  /opt/nfs-storage"
+
+- name: Install FS Subdir External Provisioner Jenkins in Kuber
+  gather_facts: True
+
+  hosts: kube_control_plane
+  tasks:
+  - name: Add Helm apt repo block
+    block:
+      - name: Get system architecture
+        shell:
+          cmd: dpkg --print-architecture
+        register: sys_arch
+      - name: Get Helm apt repo key
+        shell:
+          cmd: "curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null"
+      - name: Add Helm apt repo
+        ansible.builtin.copy:
+          dest: "/etc/apt/sources.list.d/helm-stable-debian.list"
+          content: |
+            deb [arch={{ sys_arch.stdout }} signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main
+        become: true
+
+  - name: Remove apt lock file
+    file:
+      state: absent
+      path:
+        - "/var/lib/dpkg/lock-frontend"
+        - "/var/lib/dpkg/lock"
+        - "/var/lib/apt/lists/lock"
+        - "/var/cache/apt/archives/lock"
+#  - name: Pause for 5 minutes to build app cache
+#    ansible.builtin.pause:
+#      seconds: 10
+  - name: Install Helm
+    ansible.builtin.apt:
+      update_cache: yes
+      pkg:
+      - helm
+    become: true
+
+  - name: Add NFS Subdir External Provisioner chart repo
+    kubernetes.core.helm_repository:
+      name: nfs-subdir-external-provisioner
+      repo_url: "https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/"
+
+  - name: Deploy latest FS Subdir External Provisioner chart
+    kubernetes.core.helm:
+      name: nfs-subdir-external-provisioner
+      chart_ref: nfs-subdir-external-provisioner/nfs-subdir-external-provisioner
+      release_namespace: nfs-provisioner
+      create_namespace: true
+      values:
+        nfs:
+          server: "{{ ansible_eth0.ipv4.address }}"
+          path: /srv/nfs
+        storageClass:
+          defaultClass: true
+          accessModes: ReadWriteMany

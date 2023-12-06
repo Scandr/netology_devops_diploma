@@ -1,0 +1,81 @@
+---
+- name: Install Jenkins in Kuber
+  gather_facts: True
+  hosts: kube_control_plane
+  tasks:
+  - name: Create jenkins manifest dir
+    ansible.builtin.file:
+      path: /opt/jenkins
+      state: directory
+      mode: '0755'
+
+  - name: Copy jenkins manifests
+    ansible.builtin.copy:
+      src: jenkins_manifests/
+      dest: /opt/jenkins/
+      owner: root
+      group: root
+      mode: '0644'
+
+  - name: Add Jenkins chart repo
+    kubernetes.core.helm_repository:
+      name: jenkins
+      repo_url: "https://charts.jenkins.io"
+
+  - name: Restart core dns (for some reason it is required to enable internet traffic)
+    ansible.builtin.shell:
+      cmd: "kubectl -n kube-system rollout restart deployment coredns"
+
+  - name: Deploy latest Jenkins chart
+    kubernetes.core.helm:
+      name: jenkins
+      chart_ref: jenkins/jenkins
+      release_namespace: jenkins
+      create_namespace: true
+#      values_files:
+#      - /opt/jenkins/values.yaml
+      values:
+        kubernetesURL: "https://{{ ansible_eth0.ipv4.address }}"
+        controller:
+          image: "xillah/custom-jenkins"
+          tagLabel: lts
+          serviceType: NodePort
+          persistence:
+            enabled: true
+            storageClass: "nfs-client"
+            accessMode: "ReadWriteMany"
+          containerEnv:
+           - name: JENKINS_UC
+             value: "https://updates.jenkins.io"
+           - name: JENKINS_UC_EXPERIMENTAL
+             value: "https://updates.jenkins.io/experimental"
+           - name: JENKINS_INCREMENTALS_REPO_MIRROR
+             value: "https://repo.jenkins-ci.org/incrementals"
+           - name: JENKINS_PLUGIN_INFO
+             value: "https://updates.jenkins.io/current/plugin-versions.json"
+    register: jenkins_chart_output
+
+  - name: Echo jenkins_chart_output
+    debug:
+      var: jenkins_chart_output
+
+  - name: Get jenkins admin password
+    ansible.builtin.shell:
+      cmd: "kubectl exec --namespace jenkins -it svc/jenkins -c jenkins -- /bin/cat /run/secrets/additional/chart-admin-password && echo"
+    register: jenkins_admin_pass
+  - name: Get jenkins port
+    ansible.builtin.shell:
+      cmd: "kubectl get --namespace jenkins -o jsonpath=\"{.spec.ports[0].nodePort}\" services jenkins"
+    register: jenkins_port
+  - name: Get jenkins node
+    ansible.builtin.shell:
+      cmd: "kubectl describe po jenkins-0 -n jenkins | grep 'Node:'"
+    register: jenkins_node
+
+  - name: Echo jenkins_chart_output
+    debug:
+      msg:
+        - "Jenkins node: {{ jenkins_node.stdout_lines }}"
+        - "Jenkins port: {{ jenkins_port.stdout_lines }}"
+        - "Jenkins admin password: {{ jenkins_admin_pass.stdout_lines }}"
+

@@ -230,6 +230,13 @@
         cp -i /etc/kubernetes/admin.conf /home/{{ KUBER_USER }}/.kube/config
         chown {{ KUBER_USER }}:{{ KUBER_USER }} /home/{{ KUBER_USER }}/.kube/config
 
+  - name: Add .kube config to root user
+    ansible.builtin.shell:
+      cmd: |
+        mkdir -p /root/.kube
+        cp -i /etc/kubernetes/admin.conf /root/.kube/config
+        chown root:root /root/.kube/config
+
 #  - name: Add new instance to host group
 #    add_host:
 #      hostname: "{{ kube_control_plane }}"
@@ -268,3 +275,9 @@
   - name: Result kube join
     debug:
       var: kube_join_output.stdout
+
+- name: Include a play after another play
+  import_playbook: install_nfs.yml
+
+- name: Include a play after another play
+  import_playbook: install_jenkins.yml

@@ -5,8 +5,8 @@ resource "yandex_compute_instance" "worker01" {
   allow_stopping_for_update = true
 
   resources {
-    cores  = 2
-    memory = 4
+    cores  = 4
+    memory = 8
   }
 
   boot_disk {
@@ -14,7 +14,7 @@ resource "yandex_compute_instance" "worker01" {
       image_id    = "${var.os_destrib}"
       name        = "root-worker01"
       type        = "network-nvme"
-      size        = "10"
+      size        = "50"
     }
   }
 

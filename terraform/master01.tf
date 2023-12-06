@@ -14,10 +14,14 @@ resource "yandex_compute_instance" "master01" {
       image_id    = "${var.os_destrib}"
       name        = "root-master01"
       type        = "network-nvme"
-      size        = "10"
+      size        = "50"
     }
   }
-
+  secondary_disk {
+    disk_id = yandex_compute_disk.nfs-disk.id
+    auto_delete = true
+    device_name = "nfs"
+    }
 #  network_interface {
 #    subnet_id  = "${yandex_vpc_subnet.netology-subnet-a.id}"
 #    nat        = true
