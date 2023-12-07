@@ -64,6 +64,7 @@
       - docker-compose-plugin
       - containerd.io
       - golang-go
+      - nfs-common
 
   - name: Set containerd's config to default
     ansible.builtin.shell:
@@ -191,7 +192,8 @@
   - name: Run kubeadm init
     ansible.builtin.shell:
 #        cmd: 'kubeadm init --pod-network-cidr=192.168.100.0/24'
-      cmd: 'kubeadm init  --pod-network-cidr=10.244.0.0/16'
+#      cmd: "kubeadm init  --pod-network-cidr=10.244.0.0/16 --apiserver-cert-extra-sans {{ hostvars['kube_control_plane'].apiserver_cert_extra_sans }}"
+      cmd: "kubeadm init  --pod-network-cidr=10.244.0.0/16 --apiserver-cert-extra-sans {{ apiserver_cert_extra_sans }}"
     register: kube_init_result
 
   - name: Get Canal plugin yaml config
@@ -237,6 +239,11 @@
         cp -i /etc/kubernetes/admin.conf /root/.kube/config
         chown root:root /root/.kube/config
 
+  - name: Add .kube config to ansible host
+    ansible.builtin.fetch:
+      src: /etc/kubernetes/admin.conf
+      dest: ../kube_config
+
 #  - name: Add new instance to host group
 #    add_host:
 #      hostname: "{{ kube_control_plane }}"
@@ -280,4 +287,8 @@
   import_playbook: install_nfs.yml
 
 - name: Include a play after another play
+  import_playbook: install_prometheus.yml
+
+- name: Include a play after another play
   import_playbook: install_jenkins.yml
+

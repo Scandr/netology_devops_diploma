@@ -4,14 +4,33 @@
   become: true
   hosts: kube_control_plane
   tasks:
-  - name: Remove apt lock file
-    file:
+#  - name: Remove apt lock file
+#    file:
+#      state: absent
+#      path:
+#        - "/var/lib/dpkg/lock-frontend"
+#        - "/var/lib/dpkg/lock"
+#        - "/var/lib/apt/lists/lock"
+#        - "/var/cache/apt/archives/lock"
+  - name: Find apt process
+    ansible.builtin.shell:
+      cmd: "ps -ef | grep -v grep | grep -w apt | awk '{print $2}'"
+    register: apt_proc
+
+  - name: Kill apt processes to unlock all it's files
+    shell: "kill {{ item }}"
+    with_items: "{{ apt_proc.stdout_lines }}"
+
+  - wait_for:
+      path: "/proc/{{ item }}/status"
       state: absent
-      path:
-        - "/var/lib/dpkg/lock-frontend"
-        - "/var/lib/dpkg/lock"
-        - "/var/lib/apt/lists/lock"
-        - "/var/cache/apt/archives/lock"
+    with_items: "{{ apt_proc.stdout_lines }}"
+    ignore_errors: yes
+    register: killed_apt_proc
+
+  - name: Force kill stuck apt processes
+    shell: "kill -9 {{ item }}"
+    with_items: "{{ killed_apt_proc.results | select('failed') | map(attribute='item') | list }}"
 
 #  - name: Pause for 5 minutes to build app cache
 #    ansible.builtin.pause:
@@ -73,22 +92,22 @@
   hosts: k8s_cluster
   tasks:
 
-  - name: Remove apt lock file
-    file:
-      state: absent
-      path:
-        - "/var/lib/dpkg/lock-frontend"
-        - "/var/lib/dpkg/lock"
-        - "/var/lib/apt/lists/lock"
-        - "/var/cache/apt/archives/lock"
+#  - name: Remove apt lock file
+#    file:
+#      state: absent
+#      path:
+#        - "/var/lib/dpkg/lock-frontend"
+#        - "/var/lib/dpkg/lock"
+#        - "/var/lib/apt/lists/lock"
+#        - "/var/cache/apt/archives/lock"
 #  - name: Pause for 5 minutes to build app cache
 #    ansible.builtin.pause:
 #      seconds: 10
-  - name: Install NFS package
-    ansible.builtin.apt:
-      update_cache: yes
-      pkg:
-      - nfs-common
+#  - name: Install NFS package
+#    ansible.builtin.apt:
+#      update_cache: yes
+#      pkg:
+#      - nfs-common
 
   - name: Create NFS mount dir
     ansible.builtin.file:
@@ -129,14 +148,14 @@
             deb [arch={{ sys_arch.stdout }} signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main
         become: true
 
-  - name: Remove apt lock file
-    file:
-      state: absent
-      path:
-        - "/var/lib/dpkg/lock-frontend"
-        - "/var/lib/dpkg/lock"
-        - "/var/lib/apt/lists/lock"
-        - "/var/cache/apt/archives/lock"
+#  - name: Remove apt lock file
+#    file:
+#      state: absent
+#      path:
+#        - "/var/lib/dpkg/lock-frontend"
+#        - "/var/lib/dpkg/lock"
+#        - "/var/lib/apt/lists/lock"
+#        - "/var/cache/apt/archives/lock"
 #  - name: Pause for 5 minutes to build app cache
 #    ansible.builtin.pause:
 #      seconds: 10

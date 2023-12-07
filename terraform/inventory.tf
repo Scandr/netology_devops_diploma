@@ -23,6 +23,9 @@ resource "local_file" "inventory" {
     [k8s_cluster:vars]
     ansible_user=ubuntu
 
+    [kube_control_plane:vars]
+    apiserver_cert_extra_sans=${yandex_compute_instance.master01.network_interface.0.nat_ip_address}
+
     DOC
   filename = "../playbooks/inventory.yml"
 

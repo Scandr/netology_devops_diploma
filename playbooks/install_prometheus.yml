@@ -1,0 +1,25 @@
+---
+- name: Install Jenkins in Kuber
+  gather_facts: True
+  hosts: kube_control_plane
+  tasks:
+  - name: Create kube-prometheus manifest dir
+    ansible.builtin.file:
+      path: /opt/prometheus
+      state: directory
+      mode: '0755'
+  - name: Get the kube-prometheus project
+    ansible.builtin.git:
+      repo: https://github.com/prometheus-operator/kube-prometheus.git
+      dest: /opt/prometheus
+
+  - name: Apply kube-prometheus setup manifests
+    ansible.builtin.shell:
+      cmd: "kubectl create -f /opt/prometheus/manifests/setup"
+  - name: Wait until the "servicemonitors" CRD is created. The message "No resources found" means success in this context.
+    ansible.builtin.shell:
+      cmd: "until kubectl get servicemonitors --all-namespaces ; do date; sleep 1; echo ''; done"
+
+  - name: Apply kube-prometheus manifests
+    ansible.builtin.shell:
+      cmd: "kubectl create -f /opt/prometheus/manifests/"
