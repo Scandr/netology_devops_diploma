@@ -286,9 +286,18 @@
 - name: Include a play after another play
   import_playbook: install_nfs.yml
 
+#- name: Include a play after another play
+#  import_playbook: install_nginx_ingress.yml
+
 - name: Include a play after another play
   import_playbook: install_prometheus.yml
 
 - name: Include a play after another play
   import_playbook: install_jenkins.yml
+
+- name: Include a play after another play
+  import_playbook: deploy_nginx.yml
+
+- name: Include a play after another play
+  import_playbook: install_atlantis.yml
 

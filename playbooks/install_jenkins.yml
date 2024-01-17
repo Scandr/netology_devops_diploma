@@ -35,18 +35,34 @@
 #      values_files:
 #      - /opt/jenkins/values.yaml
       values:
-        kubernetesURL: "https://{{ ansible_eth0.ipv4.address }}"
+#        kubernetesURL: "https://{{ ansible_eth0.ipv4.address }}"
         controller:
           image: "xillah/custom-jenkins"
           tagLabel: lts
           serviceType: NodePort
+          serviceAnnotations:
+
+          ingress:
+            enabled: false
+            ingressClassName: nginx
+            hostName: "my.jenkins"
+            path: "/jenkins"
           prometheus:
             enabled: true
           installPlugins:
             - kubernetes:4029.v5712230ccb_f8
             - workflow-aggregator:596.v8c21c963d92d
-            - git:5.2.0
+            - git:5.2.1
             - github:1.37.3.1
+            - github-oauth:597.ve0c3480fcb_d0
+            - github-branch-source:1767.va_7d01ea_c7256
+            - pipeline-github-lib:42.v0739460cda_c4
+            - blueocean-github-pipeline:1.27.9
+            - generic-webhook-trigger:1.88.2
+            - ghprb:1.42.2
+            - pipeline-github:2.8-159.09e4403bc62f
+            - github-pr-comment-build:96.v9ff13b69dd66
+            - git-push:34.vd474e0fe7b_ec
             - configuration-as-code:1670.v564dc8b_982d0
             - prometheus:2.4.1
           persistence:
@@ -70,7 +86,7 @@
 
   - name: Wait until pod is ready
     shell:
-      cmd: "kubectl wait --for=condition=ready pod --all -n jenkins --timeout=300s"
+      cmd: "kubectl wait --for=condition=ready pod --all -n jenkins --timeout=600s"
 
   - name: Get jenkins admin password
     ansible.builtin.shell:
