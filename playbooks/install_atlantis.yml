@@ -1,0 +1,134 @@
+---
+- name: Install Atlantis in Kuber
+  gather_facts: True
+  hosts: kube_control_plane
+  become: true
+  vars_files:
+    - group_vars/secrets.yml
+  tasks:
+  - name: Create nginx manifest dir
+    ansible.builtin.file:
+      path: /opt/atlantis
+      state: directory
+      mode: '0755'
+
+  - name: Create nginx namespace
+    ansible.builtin.shell:
+      cmd: "kubectl create ns atlantis"
+
+  - name: Creat atlantis-secrets kuber secret
+    copy:
+      dest: "/opt/atlantis/atlantis-secrets.yml"
+      content: |
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: atlantis-secrets
+          namespace: atlantis
+        data:
+          gh-user: "{{ gh_user | b64encode }}"
+          gh-token: "{{ gh_token | b64encode }}"
+          gh-webhook-secret: "{{ gh_webhook_secret | b64encode }}"
+
+  - name: Creat atlantis-webhook kuber secret
+    copy:
+      dest: "/opt/atlantis/atlantis-webhook.yml"
+      content: |
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: atlantis-webhook
+          namespace: atlantis
+          labels:
+            chart: atlantis-4.19.0
+            helm.sh/chart: atlantis-4.19.0
+            heritage: Helm
+            release: atlantis
+          annotations:
+            meta.helm.sh/release-name: atlantis
+            meta.helm.sh/release-namespace: atlantis
+        data:
+          gh-webhook-secret: "{{ gh_webhook_secret | b64encode }}"
+
+  - name: Apply atlantis secret
+    ansible.builtin.shell:
+      cmd: "kubectl apply -f /opt/atlantis/atlantis-secrets.yml"
+
+#  - name: Create a Secret object from an inline definition
+#    kubernetes.core.k8s:
+#      state: present
+#      definition:
+#        apiVersion: v1
+#        kind: Secret
+#        metadata:
+#          name: atlantis-secrets
+#          namespace: atlantis
+#        data:
+#          gh-user: "{{ gh-user }}"
+#          gh-token: "{{ gh-token }}"
+#          gh-webhook-secret: "{{ gh-webhook-secret }}"
+
+  - name: Add Atlantis chart repo
+    kubernetes.core.helm_repository:
+      name: runatlantis
+      repo_url: "https://runatlantis.github.io/helm-charts"
+
+  - name: Deploy latest Atlantis chart
+    kubernetes.core.helm:
+      name: atlantis
+      chart_ref: runatlantis/atlantis
+      release_namespace: atlantis
+      create_namespace: true
+      values:
+        orgAllowlist: github.com/Scandr/netology_devops_diploma
+        ingress:
+          enabled: false
+        servicemonitor:
+          enabled: true
+        volumeClaim:
+          storageClassName: "nfs-client"
+        environment:
+#          ATLANTIS_REPO_ALLOWLIST: github.com/Scandr/netology_devops_diploma
+
+        environmentSecrets:
+          - name: ATLANTIS_GH_WEBHOOK_SECRET
+            secretKeyRef:
+              name: atlantis-secrets
+              key: gh-webhook-secret
+          - name: ATLANTIS_GH_USER
+            secretKeyRef:
+              name: atlantis-secrets
+              key: gh-user
+          - name: ATLANTIS_GH_TOKEN
+            secretKeyRef:
+              name: atlantis-secrets
+              key: gh-token
+#        config: |
+#          ---
+#          webhooks:
+#            - event: apply
+#              workspace-regex: .*
+#              branch-regex: .*
+#              kind: slack
+#              channel: my-channel
+#        repoConfig: |
+#          ---
+#          repos:
+#          - id: /.*/
+#            apply_requirements: []
+#            workflow: default
+#            allowed_overrides: ["default"]
+#            allow_custom_workflows: false
+#          workflows:
+#            default:
+#              plan:
+#                steps: [init, plan]
+#              apply:
+#                steps: [apply]
+#        metrics:
+#          prometheus:
+#            endpoint: /metrics
+
+  - name: Apply atlantis secret
+    ansible.builtin.shell:
+      cmd: "kubectl apply -f /opt/atlantis/atlantis-webhook.yml"
