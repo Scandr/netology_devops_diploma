@@ -6,7 +6,7 @@ resource "yandex_compute_instance" "master01" {
 
   resources {
     cores  = 2
-    memory = 4
+    memory = 5
   }
 
   boot_disk {
