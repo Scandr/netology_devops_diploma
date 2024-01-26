@@ -1,22 +1,23 @@
 # Task
 ## Что необходимо для сдачи задания?
 
-1. Репозиторий с конфигурационными файлами Terraform и готовность продемонстрировать создание всех ресурсов с нуля.
-#### Ответ: [netology_devops_diploma.git](https://github.com/Scandr/netology_devops_diploma.git)<br>
-2. Пример pull request с комментариями созданными atlantis'ом или снимки экрана из Terraform Cloud или вашего CI-CD-terraform pipeline.
-#### Ответ: ??? делать через неспецифичный для terraform CI-CD (Jenkins)<br>
-3. Репозиторий с конфигурацией ansible, если был выбран способ создания Kubernetes кластера при помощи ansible.
-#### Ответ: [netology_devops_diploma.git](https://github.com/Scandr/netology_devops_diploma.git)<br>
-4. Репозиторий с Dockerfile тестового приложения и ссылка на собранный docker image.
-#### Ответ: [nginx_cicd_source.git](https://github.com/Scandr/nginx_cicd_source.git)<br>
-#### Ответ: [xillah/nginx](https://hub.docker.com/repository/docker/xillah/nginx/general)<br>
-5. Репозиторий с конфигурацией Kubernetes кластера.
-#### Ответ: ???
+#### 1. Репозиторий с конфигурационными файлами Terraform и готовность продемонстрировать создание всех ресурсов с нуля.
+##### Ответ: [netology_devops_diploma.git](https://github.com/Scandr/netology_devops_diploma.git)<br>
+#### 2. Пример pull request с комментариями созданными atlantis'ом или снимки экрана из Terraform Cloud или вашего CI-CD-terraform pipeline.
+##### Ответ: ??? делать через неспецифичный для terraform CI-CD (Jenkins)?<br>
+#### 3. Репозиторий с конфигурацией ansible, если был выбран способ создания Kubernetes кластера при помощи ansible.
+##### Ответ: [netology_devops_diploma.git](https://github.com/Scandr/netology_devops_diploma.git)<br>
+#### 4. Репозиторий с Dockerfile тестового приложения и ссылка на собранный docker image.
+##### Ответ: 
+[nginx_cicd_source.git](https://github.com/Scandr/nginx_cicd_source.git)<br>
+[xillah/nginx](https://hub.docker.com/repository/docker/xillah/nginx/general)<br>
+#### 5. Репозиторий с конфигурацией Kubernetes кластера.
+##### Ответ: ???
 Сборка кластера в плейбуках: [netology_devops_diploma.git](https://github.com/Scandr/netology_devops_diploma.git)<br>
 Манифесты для приложения: [nginx_cicd_source.git](https://github.com/Scandr/nginx_cicd_source.git)<br>
-6. Ссылка на тестовое приложение и веб интерфейс Grafana с данными доступа.
-#### Ответ: Оно должно постоянно работать или можно назначить время? <br>
-7. Все репозитории рекомендуется хранить на одном ресурсе (github, gitlab)
+#### 6. Ссылка на тестовое приложение и веб интерфейс Grafana с данными доступа.
+##### Ответ: Оно должно постоянно работать или можно назначить время? <br>
+#### 7. Все репозитории рекомендуется хранить на одном ресурсе (github, gitlab)
 
 
 # Set up Terraform
