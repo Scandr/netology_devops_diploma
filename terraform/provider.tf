@@ -11,8 +11,11 @@ terraform {
   region     = "ru-central"
   key        = "netology-diploma/terraform.tfstate"
 # $ yc iam access-key create --service-account-name terraform
-  access_key = "" # key_id:
-  secret_key = "" # secret:
+#  access_key = "" # key_id:
+#  secret_key = "" # secret:
+#  skip_region_validation      = true
+#  skip_credentials_validation = true
+#  skip_requesting_account_id  = true
 
   skip_region_validation      = true
   skip_credentials_validation = true
