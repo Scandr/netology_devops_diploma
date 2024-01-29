@@ -14,7 +14,7 @@ resource "yandex_compute_instance" "master01" {
       image_id    = "${var.os_destrib}"
       name        = "root-master01"
       type        = "network-nvme"
-      size        = "40"
+      size        = "44"
     }
   }
   secondary_disk {
