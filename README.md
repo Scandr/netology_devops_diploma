@@ -4,7 +4,8 @@
 #### 1. Репозиторий с конфигурационными файлами Terraform и готовность продемонстрировать создание всех ресурсов с нуля.
 ##### Ответ: [netology_devops_diploma.git](https://github.com/Scandr/netology_devops_diploma.git)<br>
 #### 2. Пример pull request с комментариями созданными atlantis'ом или снимки экрана из Terraform Cloud или вашего CI-CD-terraform pipeline.
-##### Ответ: ??? делать через неспецифичный для terraform CI-CD (Jenkins)? Есть подозрение, что не работает Atlantis с YC<br>
+##### Ответ: [atlantis_source.git](https://github.com/Scandr/atlantis_source.git)
+~~??? делать через неспецифичный для terraform CI-CD (Jenkins)? Есть подозрение, что не работает Atlantis с YC~~<br>
 #### 3. Репозиторий с конфигурацией ansible, если был выбран способ создания Kubernetes кластера при помощи ansible.
 ##### Ответ: [netology_devops_diploma.git](https://github.com/Scandr/netology_devops_diploma.git)<br>
 #### 4. Репозиторий с Dockerfile тестового приложения и ссылка на собранный docker image.
